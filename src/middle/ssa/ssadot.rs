@@ -153,7 +153,7 @@ impl GraphDot for SSAStorage {
         prefix.push_str(&format!("n{}", i.index()));
 
         let attr = match *node {
-            NodeData::Op(opc, vi) => {
+            NodeData::Op(ref opc, vi) => {
                 let w = vi.width().get_width().unwrap_or(64);
                 let mut attrs = Vec::new();
                 let mut r = String::new();
@@ -167,7 +167,7 @@ impl GraphDot for SSAStorage {
                     r.push_str(">");
                 }
 
-                if let MOpcode::OpConst(_) = opc {
+                if let MOpcode::OpConst(_) = *opc {
                     attrs.push(("style".to_owned(), "filled".to_owned()));
                     attrs.push(("color".to_owned(), "black".to_owned()));
                     attrs.push(("fillcolor".to_owned(), "yellow".to_owned()));
