@@ -20,8 +20,7 @@ use petgraph::prelude::NodeIndex;
 use analysis::cse::ssasort::Sorter;
 use frontend::bindings::{RadecoBindings, RBind, RBindings};
 use frontend::containers::{RadecoFunction, RFunction};
-use frontend::containers::RadecoModule;
-use frontend::containers::CallContext;
+use frontend::radeco_containers::{CallContextInfo, RadecoModule};
 use middle::ir::MOpcode;
 use middle::regfile::SubRegisterFile;
 use middle::ssa::cfg_traits::CFG;
@@ -34,26 +33,18 @@ type LValueRef = <SSAStorage as SSA>::ValueRef;
 type LIdx<B> = <RadecoBindings<B> as RBindings>::Idx;
 
 
-#[derive(Debug)]
-pub struct CallFixer<'a, 'b: 'a, B>
-    where B: 'b + RBind + Debug + Clone,
-{
-    rmod: &'a mut RadecoModule<'b, RadecoFunction<RadecoBindings<B>>>,
+//FIXME derive Debug
+// #[derive(Debug)]
+pub struct CallFixer<'a> {
+    rmod: &'a mut RadecoModule,
     sp_offsets: HashMap<u64, Option<i64>>,
     sp_name: Option<String>,
     bp_name: Option<String>,
 }
 
-impl<'a, 'b: 'a, B> CallFixer<'a, 'b, B>
-    where B: 'b + RBind + Debug + Clone,
-{
-    pub fn new(rmod: &'a mut RadecoModule<'b, RadecoFunction<RadecoBindings<B>>>) 
-        -> CallFixer<'a, 'b, B> {
-            let regfile = rmod.regfile.clone()
-                .unwrap_or_else(|| {
-                    radeco_err!("regfile is None");
-                    SubRegisterFile::default()
-                });
+impl<'a> CallFixer<'a> {
+    pub fn new(rmod: &'a mut RadecoModule, regfile: SubRegisterFile) 
+        -> CallFixer {
             CallFixer {
                 bp_name: regfile.get_name_by_alias(&"BP".to_string()),
                 sp_name: regfile.get_name_by_alias(&"SP".to_string()),
@@ -110,7 +101,7 @@ impl<'a, 'b: 'a, B> CallFixer<'a, 'b, B>
 
         let (entry_store, exit_load) = {
             let rfn = self.rmod.functions.get(rfn_addr).unwrap();
-            let ssa = rfn.ssa_ref();
+            let ssa = rfn.ssa();
             let sp_name = self.sp_name.clone().unwrap_or(String::new());
             let bp_name = self.bp_name.clone().unwrap_or(String::new());
             let stack_offset = digstack::rounded_analysis(&ssa, sp_name, bp_name);
@@ -176,7 +167,7 @@ impl<'a, 'b: 'a, B> CallFixer<'a, 'b, B>
         // exit block separately.
         let (entry_store, exit_load) = {
             let rfn = self.rmod.functions.get(rfn_addr).unwrap();
-            let ssa = rfn.ssa_ref();
+            let ssa = rfn.ssa();
 
                 // analysis entry block
             let entry_store = { 
@@ -206,10 +197,13 @@ impl<'a, 'b: 'a, B> CallFixer<'a, 'b, B>
             radeco_err!("RadecoFunction Not Found!");
             return;
         }
-        let call_info: Vec<(LValueRef, Vec<String>)> = {
-            let rfn = self.rmod.functions.get(rfn_addr).unwrap();
-            self.preserves_for_call_context(rfn.call_sites())
-        };
+        let call_info: Vec<(LValueRef, Vec<String>)> = Vec::new();
+        //FIXME
+        // let call_info: Vec<(LValueRef, Vec<String>)> = {
+        //     let rfn = self.rmod.functions.get(rfn_addr).unwrap();
+        //     //FIXME ???
+        //     // self.preserves_for_call_context(rfn.call_sites())
+        // };
         radeco_trace!("CallFixer|Call site: {:?}", call_info);
 
         {
@@ -292,10 +286,11 @@ impl<'a, 'b: 'a, B> CallFixer<'a, 'b, B>
         // Store data into RadecoFunction
         {
             let rfn = self.rmod.functions.get_mut(rfn_addr).unwrap();
-            let mut bindings = rfn.bindings.bindings_mut();
+            let mut bindings = rfn.bindings().into_iter();
             while let Some(bind) = bindings.next() {
-                if preserves.contains(&bind.name()) {
-                    bind.mark_preserved();
+                if preserves.contains(bind.name()) {
+                    //FIXME ???
+                    // bind.mark_preserved();
                 }
                 radeco_trace!("CallFixer|Bind: {:?}", bind);
             }
@@ -426,54 +421,55 @@ impl<'a, 'b: 'a, B> CallFixer<'a, 'b, B>
 
     // Get callee's node and its preserved registers
     fn preserves_for_call_context(&self, 
-            call_context: Vec<CallContext<LIdx<B>, LValueRef>>)
+            call_context: Vec<CallContextInfo>)
             -> Vec<(LValueRef, Vec<String>)> 
     {
         let mut result: Vec<(LValueRef, Vec<String>)> = Vec::new(); 
 
         for con in call_context {
-            // We only analyze the call context which have ssa node.
-            if con.ssa_ref.is_none() {
-                continue;
-            }
             // If callee is not certain
-            if con.callee.is_none() {
-                let ssa_ref = con.ssa_ref.unwrap_or_else(|| {
-                    radeco_err!("con.ssa_ref == None");
-                    NodeIndex::end()
-                });
-                let sp_name = vec![self.sp_name.clone().unwrap_or(String::new())];
-                result.push((ssa_ref, sp_name));
-                continue;
-            }
+            // FIXME ??
+            // if con.callee.is_none() {
+            //     let ssa_ref = con.ssa_ref.unwrap_or_else(|| {
+            //         radeco_err!("con.ssa_ref == None");
+            //         NodeIndex::end()
+            //     });
+            //     let sp_name = vec![self.sp_name.clone().unwrap_or(String::new())];
+            //     result.push((ssa_ref, sp_name));
+            //     continue;
+            // }
             let mut preserves: Vec<String> = Vec::new();
-            let rfn_opt = self.rmod.functions.get(con.callee.as_ref().unwrap_or_else(|| {
-                radeco_err!("Callee not found");
-                &0
-            }));
-            if let Some(rfn) = rfn_opt {
-                // Callee is man made function
-                let mut bindings = rfn.bindings.bindings();
-                while let Some(bind) = bindings.next() {
-                    if bind.is_preserved() {
-                        preserves.push(bind.name());
-                    }
-                }
-                let ssa_ref = con.ssa_ref.unwrap_or_else(|| {
-                    radeco_err!("con.ssa_ref == None");
-                    NodeIndex::end()
-                });
-                result.push((ssa_ref, preserves));
-            } else {
-                // Callee is library function
-                let ssa_ref = con.ssa_ref.unwrap_or_else(|| {
-                    radeco_err!("con.ssa_ref == None");
-                    NodeIndex::end()
-                });
-                let bp_name = vec![self.sp_name.clone().unwrap_or(String::new())];
-                result.push((ssa_ref, bp_name));
-
-            }
+            //FIXME ??
+            // let rfn_opt = self.rmod.functions.get(con.callee.as_ref().unwrap_or_else(|| {
+            //     radeco_err!("Callee not found");
+            //     &0
+            // }));
+            // FIXME
+            // if let Some(rfn) = rfn_opt {
+            //     // Callee is man made function
+            //     let mut bindings = rfn.bindings().into_iter();
+            //     while let Some(bind) = bindings.next() {
+            //         //FIXME ??
+            //         // if bind.is_preserved() {
+            //         //     preserves.push(bind.name());
+            //         // }
+            //     }
+            //     let ssa_ref = con.ssa_ref.unwrap_or_else(|| {
+            //         radeco_err!("con.ssa_ref == None");
+            //         NodeIndex::end()
+            //     });
+            //     result.push((ssa_ref, preserves));
+            // } else {
+            //     //FIXME ???
+            //     // // Callee is library function
+            //     // let ssa_ref = con.ssa_ref.unwrap_or_else(|| {
+            //     //     radeco_err!("con.ssa_ref == None");
+            //     //     NodeIndex::end()
+            //     // });
+            //     let bp_name = vec![self.sp_name.clone().unwrap_or(String::new())];
+            //     //FIXME
+            //     // result.push((ssa_ref, bp_name));
+            // }
         }
 
         result

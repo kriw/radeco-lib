@@ -254,6 +254,10 @@ impl VarBinding {
         }
     }
 
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
+    }
+
     pub fn index(&self) -> NodeIndex {
         self.idx
     }
@@ -307,7 +311,8 @@ pub struct RadecoFunction {
     /// List of (data-) addresses this function references
     datarefs: Vec<u64>,
     /// Constructed SSA for the function
-    ssa: SSAStorage,
+    //FIXME private
+    pub ssa: SSAStorage,
     /// Node index in the module-level callgraph
     cgid: NodeIndex,
     /// Variable bindings
@@ -936,6 +941,10 @@ impl RadecoModule {
         let mut rmod = RadecoModule::default();
         rmod.name = Cow::from(path.clone());
         rmod
+    }
+
+    pub fn name(&self) -> &str {
+        self.name.as_ref()
     }
 
     pub fn function(&self, offset: u64) -> Option<&RadecoFunction> {
