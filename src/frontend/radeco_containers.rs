@@ -311,8 +311,7 @@ pub struct RadecoFunction {
     /// List of (data-) addresses this function references
     datarefs: Vec<u64>,
     /// Constructed SSA for the function
-    //TODO issue119
-    pub ssa: SSAStorage,
+    ssa: SSAStorage,
     /// Node index in the module-level callgraph
     cgid: NodeIndex,
     /// Variable bindings

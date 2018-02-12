@@ -100,30 +100,29 @@ fn main() {
             println!("[+] Analyzing: {} @ {:#x}", rfn.name, addr);
             {
                 println!("  [*] Eliminating Dead Code");
-                dce::collect(&mut rfn.ssa);
+                dce::collect(rfn.ssa_mut());
             }
-            let mut ssa = {
+            {
                 // Constant Propagation (sccp)
                 println!("  [*] Propagating Constants");
-                let mut analyzer = sccp::Analyzer::new(&mut rfn.ssa);
+                let mut analyzer = sccp::Analyzer::new(rfn.ssa_mut());
                 analyzer.analyze();
-                analyzer.emit_ssa()
+                analyzer.emit_ssa();
             };
             {
                 println!("  [*] Eliminating More DeadCode");
-                dce::collect(&mut ssa);
+                dce::collect(rfn.ssa_mut());
             }
-            rfn.ssa = ssa;
             {
                 // Common SubExpression Elimination (cse)
                 println!("  [*] Eliminating Common SubExpressions");
-                let mut cse = CSE::new(&mut rfn.ssa);
+                let mut cse = CSE::new(rfn.ssa_mut());
                 cse.run();
             }
             {
                 // Verify SSA 
                 println!("  [*] Verifying SSA's Validity");
-                match verifier::verify(&rfn.ssa) {
+                match verifier::verify(rfn.ssa()) {
                     Err(e) => {
                         println!("  [*] Found Error: {}", e);
                         process::exit(255);
@@ -137,7 +136,7 @@ fn main() {
                 let _memory_ssa = {
                     // Generate MemorySSA
                     println!("  [*] Generating Memory SSA");
-                    let mut mssa = MemorySSA::new(&rfn.ssa);
+                    let mut mssa = MemorySSA::new(rfn.ssa());
                     //TODO issue119
                     // mssa.gather_variables(&rfn.datarefs, &rfn.locals, 
                     //                       &Some(rfn.call_ctx.iter().cloned()
@@ -183,7 +182,7 @@ fn main() {
                 println!("  [*] Writing out IR");
                 let mut ff = File::create(&fname).expect("Unable to create file");
                 let mut writer: IRWriter = Default::default();
-                let res = writer.emit_il(Some(rfn.name.as_ref().to_string()), &rfn.ssa);
+                let res = writer.emit_il(Some(rfn.name.as_ref().to_string()), rfn.ssa());
                 writeln!(ff, "{}", res).expect("Error writing to file");
                 writeln!(ffm, "{}", res).expect("Error writing to file");
                 // Set as a comment in radare2
@@ -197,7 +196,7 @@ fn main() {
                 println!("  [*] Generating dot");
                 fname.set_extension("dot");
                 let mut df = File::create(&fname).expect("Unable to create .dot file");
-                let dot = dot::emit_dot(&rfn.ssa);
+                let dot = dot::emit_dot(rfn.ssa());
                 writeln!(df, "{}", dot).expect("Error writing to file");
             }
         }
