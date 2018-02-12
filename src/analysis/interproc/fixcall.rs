@@ -198,10 +198,10 @@ impl<'a> CallFixer<'a> {
             return;
         }
         let call_info: Vec<(LValueRef, Vec<String>)> = Vec::new();
-        //FIXME
         // let call_info: Vec<(LValueRef, Vec<String>)> = {
         //     let rfn = self.rmod.functions.get(rfn_addr).unwrap();
-        //     //FIXME ???
+        //     let cgid = rfn.cgid();
+        //     // let call_sites = ;//TODO issue119
         //     // self.preserves_for_call_context(rfn.call_sites())
         // };
         radeco_trace!("CallFixer|Call site: {:?}", call_info);
@@ -289,7 +289,7 @@ impl<'a> CallFixer<'a> {
             let mut bindings = rfn.bindings().into_iter();
             while let Some(bind) = bindings.next() {
                 if preserves.contains(bind.name()) {
-                    //FIXME ???
+                    //TODO #issue119
                     // bind.mark_preserved();
                 }
                 radeco_trace!("CallFixer|Bind: {:?}", bind);
@@ -427,8 +427,8 @@ impl<'a> CallFixer<'a> {
         let mut result: Vec<(LValueRef, Vec<String>)> = Vec::new(); 
 
         for con in call_context {
+            //TODO issue119
             // If callee is not certain
-            // FIXME ??
             // if con.callee.is_none() {
             //     let ssa_ref = con.ssa_ref.unwrap_or_else(|| {
             //         radeco_err!("con.ssa_ref == None");
@@ -439,17 +439,15 @@ impl<'a> CallFixer<'a> {
             //     continue;
             // }
             let mut preserves: Vec<String> = Vec::new();
-            //FIXME ??
+            //TODO issue119
             // let rfn_opt = self.rmod.functions.get(con.callee.as_ref().unwrap_or_else(|| {
             //     radeco_err!("Callee not found");
             //     &0
             // }));
-            // FIXME
             // if let Some(rfn) = rfn_opt {
             //     // Callee is man made function
             //     let mut bindings = rfn.bindings().into_iter();
             //     while let Some(bind) = bindings.next() {
-            //         //FIXME ??
             //         // if bind.is_preserved() {
             //         //     preserves.push(bind.name());
             //         // }
@@ -460,14 +458,12 @@ impl<'a> CallFixer<'a> {
             //     });
             //     result.push((ssa_ref, preserves));
             // } else {
-            //     //FIXME ???
             //     // // Callee is library function
             //     // let ssa_ref = con.ssa_ref.unwrap_or_else(|| {
             //     //     radeco_err!("con.ssa_ref == None");
             //     //     NodeIndex::end()
             //     // });
             //     let bp_name = vec![self.sp_name.clone().unwrap_or(String::new())];
-            //     //FIXME
             //     // result.push((ssa_ref, bp_name));
             // }
         }

@@ -59,8 +59,6 @@ fn main() {
     let regfile = rp.regfile().clone();
     for _rmod in rp.iter_mut() {
         let rmod = _rmod.module;
-        // let mod_name = rmod.name().as_ref().to_string();
-
         // Reduce the complexity of rmod.functions to just a vec of (u64,&String)
         // for easier extraction and matching
         //
@@ -72,12 +70,12 @@ fn main() {
         // Analyze preserved for all functions.
         {
             println!("[*] Fixing Callee Information");
-            //TODO
+            //TODO issue119
             // let mut callfixer = CallFixer::new(rmod, regfile);
             // callfixer.rounded_analysis();
         }
 
-        //TODO
+        //TODO issue119
         // Filter the data if the user provided some args to be matched upon
         // if requested_functions.len() != 0 {
         //     let all_func_names: Vec<(&String)> =
@@ -140,7 +138,7 @@ fn main() {
                     // Generate MemorySSA
                     println!("  [*] Generating Memory SSA");
                     let mut mssa = MemorySSA::new(&rfn.ssa);
-                    //TODO
+                    //TODO issue119
                     // mssa.gather_variables(&rfn.datarefs, &rfn.locals, 
                     //                       &Some(rfn.call_ctx.iter().cloned()
                     //                             .map(|x| if x.ssa_ref.is_some() {
