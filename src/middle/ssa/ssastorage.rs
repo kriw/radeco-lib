@@ -205,8 +205,26 @@ impl SSAStorage {
         }
     }
 
-    pub fn next_node(&self, node: NodeIndex) -> NextNode {
-        unimplemented!()
+    pub fn next_node(&self, cur_node: NodeIndex) -> NextNode {
+        if !self.is_block(cur_node) {
+            // TODO get next node
+            return NextNode::One(unimplemented!());
+        }
+        if let Some(succ) = self.unconditional_block(cur_node) {
+            if let Some(_) = self.selector_in(cur_node) {
+                // TODO ???
+                unimplemented!()
+            } else {
+                NextNode::Goto(succ)
+            }
+        } else if let Some(blk) = self.conditional_blocks(cur_node) {
+            let selector = self.selector_in(cur_node)
+                .unwrap_or(unimplemented!());
+            NextNode::Branch(selector, blk.true_side, blk.false_side);
+        } else {
+            radeco_err!("Unreachable node {:?}", cur_node);
+            unimplemented!()
+        }
     }
 
     pub fn nodes_in(&self, block: NodeIndex) -> Vec<NodeIndex> {
