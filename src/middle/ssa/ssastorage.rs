@@ -186,6 +186,13 @@ impl default::Default for SSAStorage {
     }
 }
 
+pub enum NextNode {
+    Exit,
+    One(NodeIndex),
+    Goto(NodeIndex),
+    Branch(NodeIndex, NodeIndex, NodeIndex),
+}
+
 impl SSAStorage {
     pub fn new() -> SSAStorage {
         SSAStorage {
@@ -196,6 +203,10 @@ impl SSAStorage {
             regfile: Arc::default(),
             constants: HashMap::new(),
         }
+    }
+
+    pub fn next_node(&self, node: NodeIndex) -> NextNode {
+        unimplemented!()
     }
 
     pub fn nodes_in(&self, block: NodeIndex) -> Vec<NodeIndex> {

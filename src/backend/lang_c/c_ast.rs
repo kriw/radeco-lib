@@ -209,7 +209,7 @@ impl CAST {
 
     pub fn construct(rfn: &RadecoFunction, fname_map: &HashMap<u64, String>,
                 strings: &HashMap<u64, String>) -> CAST {
-        let ast = c_cfg_builder::recover_simple_ast(&rfn, &fname_map, &strings);
+        let ast = c_cfg_builder::recover_c_cfg(&rfn, &fname_map, &strings);
         ast.to_c_ast()
     }
 
