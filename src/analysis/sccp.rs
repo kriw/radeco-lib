@@ -201,9 +201,9 @@ where
             operand[0]
         };
 
-        let val = self.get_value(&operand);
-        let const_val = if let LatticeValue::Const(cval) = val {
-            cval
+        let val = self.evaluate_expression(&operand);
+        let const_val = if let LatticeValue::Const(c) = val {
+            c
         } else {
             return val;
         };
@@ -248,21 +248,17 @@ where
             .g
             .operands_of(*i)
             .iter()
-            .map(|x| self.get_value(x))
+            .cloned()
+            .take(2)
             .collect::<Vec<_>>();
 
-        let lhs = operands[0];
-        let rhs = operands[1];
-
-        let lhs_val = if let LatticeValue::Const(cval) = lhs {
-            cval
-        } else {
-            return lhs;
-        };
-        let rhs_val = if let LatticeValue::Const(cval) = rhs {
-            cval
-        } else {
-            return rhs;
+        let lhs = self.evaluate_expression(&operands[0]);
+        let rhs = self.evaluate_expression(&operands[1]);
+        let (lhs_val, rhs_val) = match (lhs, rhs) {
+            (LatticeValue::Const(l), LatticeValue::Const(r)) => (l, r),
+            _ => {
+                return LatticeValue::Bottom;
+            }
         };
 
         let mut val: u64 = match opcode {
@@ -316,11 +312,16 @@ where
         // Do not reason about stores.
         match opcode {
             MOpcode::OpStore => return LatticeValue::Bottom,
-            _ => unimplemented!(),
+            MOpcode::OpITE => return LatticeValue::Bottom,
+            _ => unreachable!(),
         }
     }
 
-    fn visit_expression(&mut self, i: &T::ValueRef) -> LatticeValue {
+    fn evaluate_expression(&mut self, i: &T::ValueRef) -> LatticeValue {
+        let val = self.get_value(i);
+        if let LatticeValue::Const(_) = val {
+            return val;
+        };
         let expr = self.g.node_data(*i).unwrap_or_else(|x| {
             radeco_err!("RegisterState found, {:?}", x);
             NodeData {
@@ -335,15 +336,20 @@ where
             MOpcode::OpInvalid
         };
 
-        let val = if let MOpcode::OpConst(v) = opcode {
+        if let MOpcode::OpConst(v) = opcode {
             LatticeValue::Const(v as u64)
         } else {
             match opcode.arity() {
                 MArity::Unary => self.evaluate_unary_op(i, opcode),
                 MArity::Binary => self.evaluate_binary_op(i, opcode),
-                _ => self.evaluate_ternary_op(i, opcode),
+                MArity::Ternary => self.evaluate_ternary_op(i, opcode),
+                _ => LatticeValue::Bottom,
             }
-        };
+        }
+    }
+
+    fn visit_expression(&mut self, i: &T::ValueRef) -> LatticeValue {
+        let val = self.evaluate_expression(i);
 
         // If expression is a `Selector` it means that it's value can affect the
         // control flow.
