@@ -698,7 +698,7 @@ where
         vt_option: Option<ValueInfo>,
     ) -> T::ValueRef {
         if vt_option.is_none() {
-            return self.ssa.insert_const(value).unwrap_or_else(|| {
+            return self.ssa.insert_const(value, None).unwrap_or_else(|| {
                 radeco_err!("Cannot insert new constants");
                 self.ssa.invalid_value().unwrap()
             });
@@ -707,7 +707,7 @@ where
         let width = vt.width().get_width().unwrap_or(64);
         if width < 64 {
             let val: u64 = value & (1 << (width) - 1);
-            let const_node = self.ssa.insert_const(val).unwrap_or_else(|| {
+            let const_node = self.ssa.insert_const(val, None).unwrap_or_else(|| {
                 radeco_err!("Cannot insert new constants");
                 self.ssa.invalid_value().unwrap()
             });
@@ -716,7 +716,7 @@ where
             self.op_use(&narrow_node, 0, &const_node);
             narrow_node
         } else {
-            let const_node = self.ssa.insert_const(value).unwrap_or_else(|| {
+            let const_node = self.ssa.insert_const(value, None).unwrap_or_else(|| {
                 radeco_err!("Cannot insert new constants");
                 self.ssa.invalid_value().unwrap()
             });

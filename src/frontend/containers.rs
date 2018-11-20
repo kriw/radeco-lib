@@ -1,7 +1,7 @@
 //! Defines `Module` and `Function` that act as containers.
 
 #![allow(deprecated)]
-#![deprecated(since="0.2.0", note="Replace with `radeco_containers`")]
+#![deprecated(since = "0.2.0", note = "Replace with `radeco_containers`")]
 
 use frontend::bindings::{Binding, LocalInfo, RBind, RBindings, RadecoBindings};
 
@@ -210,10 +210,13 @@ fn fix_call_info(rfn: &mut DefaultFnTy) {
                 if let Some(info) = call_info.get_mut(&call_site) {
                     if let Some(arg_node) = ssa.operands_of(*call_node).get(0) {
                         let target_node = ssa
-                            .insert_const(info.callee.unwrap_or_else(|| {
-                                radeco_err!("info.callee is None");
-                                0
-                            }))
+                            .insert_const(
+                                info.callee.unwrap_or_else(|| {
+                                    radeco_err!("info.callee is None");
+                                    0
+                                }),
+                                None,
+                            )
                             .unwrap_or_else(|| {
                                 radeco_err!("Cannot insert new constants");
                                 ssa.invalid_value().unwrap()
